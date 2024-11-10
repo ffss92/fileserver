@@ -14,6 +14,10 @@ to `no-cache` (`public,max-age=0,must-revalidate`).
 
 To get started using `fileserver` as a package in your application, simply mount it to your current router:
 
+```bash
+go get github.com/ffss92/fileserver
+```
+
 ```go
 mux := http.NewServeMux()
 // Stripping prefix is important here, or else your files won't be found.
@@ -28,6 +32,12 @@ fileServer := fileserver.New(assets)
 ```
 
 ### 2. CLI
+
+First, install the server by running:
+
+```bash
+go install github.com/ffss92/fileserver/cmd/fileserver@latest
+```
 
 If you just want to spin a local fileserver quickly, just run:
 
