@@ -5,8 +5,7 @@ Simple file server written in Go.
 1. Provides ETag header generation (hex encoded md5 hash);
 2. Compression with `gzip`.
 
-This package is still under development. It currently always set `Cache-Control`
-to `no-cache` (`public,max-age=0,must-revalidate`).
+This package is still under development.
 
 ## Usage
 

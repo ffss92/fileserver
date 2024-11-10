@@ -99,11 +99,11 @@ func TestServer(t *testing.T) {
 
 			// Set etag func
 			if tt.etagFunc == nil {
-				tt.etagFunc = calculateETag 
+				tt.etagFunc = calculateETag
 			}
 			h.etagFn = tt.etagFunc
 			t.Cleanup(func() {
-				h.etagFn = calculateETag 
+				h.etagFn = calculateETag
 			})
 
 			req, err := tt.newRequest()

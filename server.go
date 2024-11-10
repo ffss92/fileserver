@@ -12,24 +12,25 @@ import (
 
 var (
 	// The path could not be found in the underlying [fs.FS]
-	ErrFileNotFound  = fmt.Errorf("file not found: %w", fs.ErrNotExist)
+	ErrFileNotFound = fmt.Errorf("file not found: %w", fs.ErrNotExist)
 	// The underlying [fs.FS] returned a [fs.ErrInvalid] error. Check [fs.ValidPath] for path name rules.
-	ErrInvalidPath   = fmt.Errorf("invalid file path: %w", fs.ErrInvalid)
+	ErrInvalidPath = fmt.Errorf("invalid file path: %w", fs.ErrInvalid)
 	// This server only supports GET requests. For any other method, the server's [ErrorHandlerFunc] is
 	// called with this error.
 	ErrInvalidMethod = errors.New("invalid http method")
 )
 
 type Server struct {
-	fs         fs.FS
-	etagFn     ETagFunc
-	errHandler ErrorHandlerFunc
+	fs             fs.FS
+	etagFn         ETagFunc
+	errHandler     ErrorHandlerFunc
+	cacheControlFn CacheControlFunc
 }
 
 // Creates a new [Server]. It can be configured using functional options.
 //
-// 	fileServer := New(myFS, WithErrorHandler(myErrorHandlerFunc))
-// 	mux.Handle("/static/", http.StripPrefix("/static", fileServer))
+//	fileServer := New(myFS, WithErrorHandler(myErrorHandlerFunc))
+//	mux.Handle("/static/", http.StripPrefix("/static", fileServer))
 func New(fs fs.FS, opts ...ServerOptFn) *Server {
 	server := &Server{
 		fs:         fs,
@@ -99,9 +100,16 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("ETag", etag)
 	}
 
-	w.Header().Set("Vary", "Accept-Encoding")
-	w.Header().Set("Cache-Control", "no-cache")
+	// Set Cache-Control header
+	if s.cacheControlFn != nil {
+		cacheControl := s.cacheControlFn(r)
+		if cacheControl != "" {
+			w.Header().Set("Cache-Control", cacheControl)
+		}
+	}
+
 	// Compressed (gzip)
+	w.Header().Set("Vary", "Accept-Encoding")
 	if strings.Contains(r.Header.Get("Accept-Encoding"), "gzip") {
 		gzw := newGzipResponseWriter(w)
 		defer gzw.Close()
