@@ -110,7 +110,7 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Compressed (gzip)
-	w.Header().Set("Vary", "Accept-Encoding")
+	appendAcceptEncodingToVary(w)
 	if strings.Contains(r.Header.Get("Accept-Encoding"), "gzip") {
 		gzw := newGzipResponseWriter(w)
 		defer gzw.Close()
@@ -121,4 +121,14 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	}
 
 	http.ServeContent(w, r, fileName, stat.ModTime(), content)
+}
+
+// Appends Accept-Encoding to the currently set Vary header value.
+func appendAcceptEncodingToVary(w http.ResponseWriter) {
+	vary := w.Header().Get("Vary")
+	if vary == "" {
+		w.Header().Set("Vary", "Accept-Encoding")
+	} else {
+		w.Header().Set("Vary", vary+", Accept-Encoding")
+	}
 }
