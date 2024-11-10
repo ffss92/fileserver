@@ -1,9 +1,10 @@
-name: go-test
+name: linter
 on:
   push:
   pull_request:
 jobs:
-  go-test:
+  golangci:
+    name: lint
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -11,5 +12,5 @@ jobs:
         with:
           go-version: 1.18
           cache: true
-      - name: go-test
-        run: go test ./... -v
+      - name: go-lint
+        uses: golangci/golangci-lint-action@v6
