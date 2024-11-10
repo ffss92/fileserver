@@ -32,7 +32,7 @@ func TestWithETagFunc(t *testing.T) {
 func TestWithErrorHandler(t *testing.T) {
 	h := New(os.DirFS("testdata"), WithErrorHandler(func(w http.ResponseWriter, r *http.Request, err error) {
 		w.WriteHeader(http.StatusTeapot)
-		w.Write([]byte("teapot"))
+		_, _ = w.Write([]byte("teapot"))
 	}))
 
 	srv := httptest.NewServer(http.StripPrefix("/", h))

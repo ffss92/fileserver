@@ -5,6 +5,9 @@ Simple file server written in Go.
 1. Provides ETag header generation (hex encoded md5 hash);
 2. Compression with `gzip`.
 
+This package is still under development. It currently always set `Cache-Control`
+to `no-cache` (`public,max-age=0,must-revalidate`).
+
 ## Usage
 
 ### 1. Package
@@ -30,4 +33,10 @@ If you just want to spin a local fileserver quickly, just run:
 
 ```bash
 ./fileserver -dir assets
+```
+
+You can check all available flags running:
+
+```bash
+./fileserver -h
 ```

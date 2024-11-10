@@ -30,7 +30,7 @@ func TestGzipCompression(t *testing.T) {
 	h := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		gzw := newGzipResponseWriter(w)
 		w.Header().Set("Content-Encoding", "gzip")
-		gzw.Write([]byte("Hello World"))
+		_, _ = gzw.Write([]byte("Hello World"))
 	})
 
 	w := httptest.NewRecorder()
