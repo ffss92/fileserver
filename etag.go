@@ -10,7 +10,7 @@ import (
 type ETagFunc func(r io.Reader) (string, error)
 
 // Calculates the entity tag by md5 hashing r and quoting the hex encoded result.
-func CalculateETag(r io.Reader) (string, error) {
+func calculateETag(r io.Reader) (string, error) {
 	hasher := md5.New()
 	_, err := io.Copy(hasher, r)
 	if err != nil {

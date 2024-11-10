@@ -8,7 +8,7 @@ func WithETagFunc(etagFn ETagFunc) ServerOptFn {
 	}
 }
 
-func WithErrorHandler(errHandler ErrorHandler) ServerOptFn {
+func WithErrorHandler(errHandler ErrorHandlerFunc) ServerOptFn {
 	return func(s *Server) {
 		s.errHandler = errHandler
 	}

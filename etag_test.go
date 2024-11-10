@@ -42,7 +42,7 @@ func TestCalculateETag(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			etag, err := CalculateETag(tt.input)
+			etag, err := calculateETag(tt.input)
 			if (err != nil) != tt.fails {
 				t.Fatalf("expected error to be %v but got %v", tt.fails, err)
 			}

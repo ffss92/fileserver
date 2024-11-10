@@ -19,13 +19,14 @@ var (
 type Server struct {
 	fs         fs.FS
 	etagFn     ETagFunc
-	errHandler func(w http.ResponseWriter, r *http.Request, err error)
+	errHandler ErrorHandlerFunc
 }
 
+// Creates a new [Server]. [ETagFunc] and 
 func New(fs fs.FS, opts ...ServerOptFn) *Server {
 	server := &Server{
 		fs:         fs,
-		etagFn:     CalculateETag,
+		etagFn:     calculateETag,
 		errHandler: defaultErrorHandler,
 	}
 	for _, opt := range opts {
@@ -34,6 +35,8 @@ func New(fs fs.FS, opts ...ServerOptFn) *Server {
 	return server
 }
 
+// Creates a new file server using the [CalculateETag] to generate entity tags
+// and creates an [os.DirFS] for dir.
 func Serve(dir string) http.Handler {
 	return New(os.DirFS(dir))
 }
@@ -69,14 +72,12 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		s.errHandler(w, r, fmt.Errorf("failed to stat file: %w", err))
 		return
 	}
-
 	if stat.IsDir() {
 		s.errHandler(w, r, ErrFileNotFound)
 		return
 	}
 
 	content := file.(io.ReadSeeker)
-
 	// Calculate ETag
 	if s.etagFn != nil {
 		etag, err := s.etagFn(content)
@@ -93,7 +94,6 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 	w.Header().Set("Vary", "Accept-Encoding")
 	w.Header().Set("Cache-Control", "no-cache")
-
 	// Compressed (gzip)
 	if strings.Contains(r.Header.Get("Accept-Encoding"), "gzip") {
 		gzw := newGzipResponseWriter(w)

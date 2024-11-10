@@ -5,7 +5,7 @@ import (
 	"net/http"
 )
 
-type ErrorHandler func(w http.ResponseWriter, r *http.Request, err error)
+type ErrorHandlerFunc func(w http.ResponseWriter, r *http.Request, err error)
 
 func defaultErrorHandler(w http.ResponseWriter, r *http.Request, err error) {
 	switch {
