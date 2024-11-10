@@ -2,6 +2,7 @@ package main
 
 import (
 	"flag"
+	"log"
 	"net/http"
 
 	"github.com/ffss92/fileserver"
@@ -14,11 +15,14 @@ type config struct {
 
 func main() {
 	var cfg config
+	flag.StringVar(&cfg.dir, "dir", "", "sets the target directory")
 	flag.StringVar(&cfg.addr, "addr", ":8000", "sets the server addr")
-	flag.StringVar(&cfg.dir, "dir", "", "sets the directory to be served")
 	flag.Parse()
 
-	mux := http.NewServeMux()
-	mux.Handle("/static/", http.StripPrefix("/static/", fileserver.Serve("testdata")))
-	http.ListenAndServe(":4000", mux)
+	if cfg.dir == "" {
+		log.Fatal("please provide a target")
+	}
+
+	log.Printf("serving %q on %q\n", cfg.dir, cfg.addr)
+	log.Fatal(http.ListenAndServe(cfg.addr, http.StripPrefix("/", fileserver.Serve(cfg.dir))))
 }

@@ -2,6 +2,7 @@ package fileserver
 
 import (
 	"errors"
+	"fmt"
 	"io"
 	"io/fs"
 	"net/http"
@@ -9,23 +10,23 @@ import (
 	"strings"
 )
 
-type ServerOptFn func(s *Server)
-
-func WithETagFunc(etagFn ETagFunc) ServerOptFn {
-	return func(s *Server) {
-		s.etagFn = etagFn
-	}
-}
+var (
+	ErrFileNotFound  = fmt.Errorf("file not found: %w", fs.ErrNotExist)
+	ErrInvalidPath   = fmt.Errorf("invalid file path: %w", fs.ErrInvalid)
+	ErrInvalidMethod = errors.New("invalid http method")
+)
 
 type Server struct {
-	fs     fs.FS
-	etagFn ETagFunc
+	fs         fs.FS
+	etagFn     ETagFunc
+	errHandler func(w http.ResponseWriter, r *http.Request, err error)
 }
 
 func New(fs fs.FS, opts ...ServerOptFn) *Server {
 	server := &Server{
-		fs:     fs,
-		etagFn: CalculateETag,
+		fs:         fs,
+		etagFn:     CalculateETag,
+		errHandler: defaultErrorHandler,
 	}
 	for _, opt := range opts {
 		opt(server)
@@ -34,30 +35,30 @@ func New(fs fs.FS, opts ...ServerOptFn) *Server {
 }
 
 func Serve(dir string) http.Handler {
-	return &Server{
-		fs:     os.DirFS(dir),
-		etagFn: CalculateETag,
-	}
+	return New(os.DirFS(dir))
 }
 
 func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-
 	if r.Method != http.MethodGet {
-		http.Error(w, http.StatusText(http.StatusMethodNotAllowed), http.StatusMethodNotAllowed)
+		s.errHandler(w, r, ErrInvalidMethod)
 		return
 	}
 
 	fileName := r.URL.Path
+	if fileName == "" {
+		s.errHandler(w, r, ErrFileNotFound)
+		return
+	}
 
 	file, err := s.fs.Open(fileName)
 	if err != nil {
 		switch {
 		case errors.Is(err, fs.ErrInvalid):
-			http.Error(w, "invalid path", http.StatusBadRequest)
+			s.errHandler(w, r, ErrInvalidPath)
 		case errors.Is(err, fs.ErrNotExist):
-			http.NotFound(w, r)
+			s.errHandler(w, r, ErrFileNotFound)
 		default:
-			http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
+			s.errHandler(w, r, fmt.Errorf("failed to open file: %w", err))
 		}
 		return
 	}
@@ -65,12 +66,12 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 	stat, err := file.Stat()
 	if err != nil {
-		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
+		s.errHandler(w, r, fmt.Errorf("failed to stat file: %w", err))
 		return
 	}
 
 	if stat.IsDir() {
-		http.NotFound(w, r)
+		s.errHandler(w, r, ErrFileNotFound)
 		return
 	}
 
@@ -80,11 +81,11 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	if s.etagFn != nil {
 		etag, err := s.etagFn(content)
 		if err != nil {
-			http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
+			s.errHandler(w, r, fmt.Errorf("failed to calculate etag: %w", err))
 			return
 		}
 		if _, err := content.Seek(0, io.SeekStart); err != nil {
-			http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
+			s.errHandler(w, r, fmt.Errorf("failed to seek content: %w", err))
 			return
 		}
 		w.Header().Set("ETag", etag)
