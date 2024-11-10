@@ -11,8 +11,12 @@ import (
 )
 
 var (
+	// The path could not be found in the underlying [fs.FS]
 	ErrFileNotFound  = fmt.Errorf("file not found: %w", fs.ErrNotExist)
+	// The underlying [fs.FS] returned a [fs.ErrInvalid] error. Check [fs.ValidPath] for path name rules.
 	ErrInvalidPath   = fmt.Errorf("invalid file path: %w", fs.ErrInvalid)
+	// This server only supports GET requests. For any other method, the server's [ErrorHandlerFunc] is
+	// called with this error.
 	ErrInvalidMethod = errors.New("invalid http method")
 )
 
@@ -22,7 +26,10 @@ type Server struct {
 	errHandler ErrorHandlerFunc
 }
 
-// Creates a new [Server]. [ETagFunc] and 
+// Creates a new [Server]. It can be configured using functional options.
+//
+// 	fileServer := New(myFS, WithErrorHandler(myErrorHandlerFunc))
+// 	mux.Handle("/static/", http.StripPrefix("/static", fileServer))
 func New(fs fs.FS, opts ...ServerOptFn) *Server {
 	server := &Server{
 		fs:         fs,
