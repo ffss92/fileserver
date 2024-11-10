@@ -68,20 +68,20 @@ func TestServer(t *testing.T) {
 			},
 		},
 		{
+			name:     "bad etag func",
+			status:   http.StatusInternalServerError,
+			etagFunc: errorETagFunc,
+			newRequest: func() (*http.Request, error) {
+				return http.NewRequest(http.MethodGet, srv.URL+"/static/file.txt", nil)
+			},
+		},
+		{
 			name:   "invalid path",
 			status: http.StatusBadRequest,
 			newRequest: func() (*http.Request, error) {
 				// The behavior using the http.ServeMux here will be a 404, since the path
 				// will end up being /server.go
 				return http.NewRequest(http.MethodGet, srv.URL+"/static/../server.go", nil)
-			},
-		},
-		{
-			name:     "bad etag func",
-			status:   http.StatusInternalServerError,
-			etagFunc: errorETagFunc,
-			newRequest: func() (*http.Request, error) {
-				return http.NewRequest(http.MethodGet, srv.URL+"/static/file.txt", nil)
 			},
 		},
 	}
@@ -102,6 +102,9 @@ func TestServer(t *testing.T) {
 				tt.etagFunc = CalculateETag
 			}
 			h.etagFn = tt.etagFunc
+			t.Cleanup(func() {
+				h.etagFn = CalculateETag
+			})
 
 			req, err := tt.newRequest()
 			if err != nil {
