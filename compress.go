@@ -3,6 +3,7 @@ package fileserver
 import (
 	"compress/gzip"
 	"net/http"
+	"strings"
 )
 
 type gzipResponseWriter struct {
@@ -24,4 +25,10 @@ func newGzipResponseWriter(w http.ResponseWriter) *gzipResponseWriter {
 		ResponseWriter: w,
 		writer:         gzw,
 	}
+}
+
+// Checks if the request accepts gzip encoded responses.
+func acceptsGzip(r *http.Request) bool {
+	acceptEncoding := r.Header.Get("Accept-Encoding")
+	return strings.Contains(acceptEncoding, "gzip")
 }

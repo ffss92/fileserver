@@ -7,7 +7,6 @@ import (
 	"io/fs"
 	"net/http"
 	"os"
-	"strings"
 )
 
 var (
@@ -33,9 +32,9 @@ type Server struct {
 //	mux.Handle("/static/", http.StripPrefix("/static", fileServer))
 func New(fs fs.FS, opts ...ServerOptFn) *Server {
 	server := &Server{
-		fs:         fs,
-		etagFn:     calculateETag,
-		errHandler: defaultErrorHandler,
+		fs:             fs,
+		etagFn:         calculateETag,
+		errHandler:     defaultErrorHandler,
 		cacheControlFn: noCacheAll,
 	}
 	for _, opt := range opts {
@@ -109,9 +108,11 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	// Compressed (gzip)
+	// Append 'Accept-Encoding' to Vary header
 	appendAcceptEncodingToVary(w)
-	if strings.Contains(r.Header.Get("Accept-Encoding"), "gzip") {
+
+	// Compressed (gzip)
+	if acceptsGzip(r) {
 		gzw := newGzipResponseWriter(w)
 		defer gzw.Close()
 
