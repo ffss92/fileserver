@@ -14,7 +14,7 @@ var (
 	ErrFileNotFound = fmt.Errorf("file not found: %w", fs.ErrNotExist)
 	// The underlying [fs.FS] returned a [fs.ErrInvalid] error. Check [fs.ValidPath] for path name rules.
 	ErrInvalidPath = fmt.Errorf("invalid file path: %w", fs.ErrInvalid)
-	// This server only supports GET requests. For any other method, the server's [ErrorHandlerFunc] is
+	// This server only supports GET and HEAD requests. For any other method, the server's [ErrorHandlerFunc] is
 	// called with this error.
 	ErrInvalidMethod = errors.New("invalid http method")
 )
@@ -50,7 +50,7 @@ func Serve(dir string) http.Handler {
 }
 
 func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	if r.Method != http.MethodGet {
+	if r.Method != http.MethodGet && r.Method != http.MethodHead {
 		s.errHandler(w, r, ErrInvalidMethod)
 		return
 	}
