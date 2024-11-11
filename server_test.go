@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"os"
+	"strings"
 	"testing"
 )
 
@@ -54,6 +55,13 @@ func TestServer(t *testing.T) {
 			},
 		},
 		{
+			name:   "invalid file (root path)",
+			status: http.StatusNotFound,
+			newRequest: func() (*http.Request, error) {
+				return http.NewRequest(http.MethodGet, srv.URL+"/static/", nil)
+			},
+		},
+		{
 			name:   "invalid file (subdir)",
 			status: http.StatusNotFound,
 			newRequest: func() (*http.Request, error) {
@@ -76,12 +84,21 @@ func TestServer(t *testing.T) {
 			},
 		},
 		{
-			name:   "invalid path",
+			name:   "invalid path (..)",
 			status: http.StatusBadRequest,
 			newRequest: func() (*http.Request, error) {
 				// The behavior using the http.ServeMux here will be a 404, since the path
 				// will end up being /server.go
 				return http.NewRequest(http.MethodGet, srv.URL+"/static/../server.go", nil)
+			},
+		},
+		{
+			name:   "invalid path (.)",
+			status: http.StatusBadRequest,
+			newRequest: func() (*http.Request, error) {
+				// The behavior using the http.ServeMux here will be a 404, since the path
+				// will end up being /static/server.go
+				return http.NewRequest(http.MethodGet, srv.URL+"/static/./server.go", nil)
 			},
 		},
 	}
@@ -127,7 +144,7 @@ func TestServer(t *testing.T) {
 				etag := res.Header.Get("ETag")
 				contentEncoding := res.Header.Get("Content-Encoding")
 
-				if vary != "Accept-Encoding" {
+				if !strings.Contains(vary, "Accept-Encoding") {
 					t.Errorf("expected Vary header to include Accept-Encoding value")
 				}
 				if h.etagFn != nil && etag == "" {
