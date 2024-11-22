@@ -1,51 +1,35 @@
 # fileserver
 
-Simple file server written in Go.
+Enhanced file server for Go.
 
 1. Provides ETag header generation (hex encoded md5 hash);
-2. Compression with `gzip`.
+1. Compression with `gzip`.
 
-This package is still under development.
+For the full documentation, [click here](https://pkg.go.dev/github.com/ffss92/fileserver).
 
-## Usage
+## Installation
 
-### 1. Package
-
-To get started using `fileserver` as a package in your application, simply mount it to your current router:
+To get started, run:
 
 ```bash
 go get github.com/ffss92/fileserver
 ```
 
+## Usage
+
+To get started using `fileserver` as a package in your application, simply mount it to your current router:
+
 ```go
+static := os.DirFS("static")
 mux := http.NewServeMux()
 // Stripping prefix is important here, or else your files won't be found.
+mux.Handle("/static/", http.StripPrefix("/static/", fileserver.ServeFS(static)))
+// Or
 mux.Handle("/static/", http.StripPrefix("/static/", fileserver.Serve("assets")))
 ```
 
-You can add custom configuration by calling `fileserver.New`.
+## Roadmap
 
-```go
-assets := os.DirFS("web/assets")
-fileServer := fileserver.New(assets)
-```
-
-### 2. CLI
-
-First, install the server by running:
-
-```bash
-go install github.com/ffss92/fileserver/cmd/fileserver@latest
-```
-
-If you just want to spin a local fileserver quickly, just run:
-
-```bash
-./fileserver -dir assets
-```
-
-You can check all available flags running:
-
-```bash
-./fileserver -h
-```
+- Attempt to serve `index.html` instead of returning a 404 if a
+  directory is requested. For example, requests to `/static/dir`
+  will attempt serve `/static/dir/index.html`, if present.

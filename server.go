@@ -9,6 +9,18 @@ import (
 	"os"
 )
 
+var _ http.Handler = (*Server)(nil)
+
+// Server implements an [http.Handler] for serving static files.
+//
+// It sets the ETag e Last-Modified headers and properly handles
+// Range, If-Range, If-Match, If-None-Match, If-Modified-Since
+// and If-Unmodified-Since through the use of [http.ServeContent].
+//
+// By default, ETag generation is done by md5 hashing the file contents
+// and Cache-Control is set to 'no-cache'. This behavior is configurable
+// by creating a new File Server using [fileserver.New] and providing the
+// desired [fileserver.ServerOptFn] functional options.
 type Server struct {
 	fs             fs.FS
 	etagFn         ETagFunc
@@ -102,8 +114,8 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	// Append 'Accept-Encoding' to Vary header
-	appendAcceptEncodingToVary(w)
+	// Add 'Accept-Encoding' Vary header
+	w.Header().Add("Vary", "Accept-Encoding")
 
 	// Compressed (gzip)
 	if acceptsGzip(r) {
@@ -116,14 +128,4 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	}
 
 	http.ServeContent(w, r, fileName, stat.ModTime(), content)
-}
-
-// Appends Accept-Encoding to the currently set Vary header value.
-func appendAcceptEncodingToVary(w http.ResponseWriter) {
-	vary := w.Header().Get("Vary")
-	if vary == "" {
-		w.Header().Set("Vary", "Accept-Encoding")
-	} else {
-		w.Header().Set("Vary", vary+", Accept-Encoding")
-	}
 }
