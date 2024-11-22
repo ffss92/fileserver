@@ -9,16 +9,6 @@ import (
 	"os"
 )
 
-var (
-	// The path could not be found in the underlying [fs.FS]
-	ErrFileNotFound = fmt.Errorf("file not found: %w", fs.ErrNotExist)
-	// The underlying [fs.FS] returned a [fs.ErrInvalid] error. Check [fs.ValidPath] for path name rules.
-	ErrInvalidPath = fmt.Errorf("invalid file path: %w", fs.ErrInvalid)
-	// This server only supports GET and HEAD requests. For any other method, the server's [ErrorHandlerFunc] is
-	// called with this error.
-	ErrInvalidMethod = errors.New("invalid http method")
-)
-
 type Server struct {
 	fs             fs.FS
 	etagFn         ETagFunc
@@ -43,10 +33,14 @@ func New(fs fs.FS, opts ...ServerOptFn) *Server {
 	return server
 }
 
-// Creates a new file server using the [CalculateETag] to generate entity tags
-// and creates an [os.DirFS] for dir.
+// Creates a new file server for a given [fs.FS].
+func ServeFS(fs fs.FS) http.Handler {
+	return New(fs)
+}
+
+// Creates a new file server a dir using [os.DirFS].
 func Serve(dir string) http.Handler {
-	return New(os.DirFS(dir))
+	return ServeFS(os.DirFS(dir))
 }
 
 func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
