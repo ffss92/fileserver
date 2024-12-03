@@ -46,13 +46,13 @@ func New(fs fs.FS, opts ...ServerOptFn) *Server {
 }
 
 // Creates a new file server for a given [fs.FS].
-func ServeFS(fs fs.FS) http.Handler {
-	return New(fs)
+func ServeFS(fs fs.FS, opts ...ServerOptFn) http.Handler {
+	return New(fs, opts...)
 }
 
 // Creates a new file server a dir using [os.DirFS].
-func Serve(dir string) http.Handler {
-	return ServeFS(os.DirFS(dir))
+func Serve(dir string, opts ...ServerOptFn) http.Handler {
+	return ServeFS(os.DirFS(dir), opts...)
 }
 
 func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
