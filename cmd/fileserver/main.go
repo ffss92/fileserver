@@ -26,7 +26,7 @@ func main() {
 	flag.BoolVar(&cfg.silent, "silent", false, "Disables request logging.")
 	flag.Parse()
 
-	dir := os.Args[1]
+	dir := flag.Arg(0)
 	if dir == "" {
 		log.Fatal("please provide a target")
 	}
@@ -37,12 +37,13 @@ func main() {
 
 	var h http.Handler
 	if cfg.spa {
+		log.Printf("Serving %q on %q in SPA mode\n", dir, cfg.addr)
 		h = http.StripPrefix("/", fileserver.ServeSPA(os.DirFS(dir), cfg.fallback))
 	} else {
+		log.Printf("Serving %q on %q\n", dir, cfg.addr)
 		h = http.StripPrefix("/", fileserver.Serve(dir))
 	}
 
-	log.Printf("Serving %q on %q\n", dir, cfg.addr)
 	log.Fatal(http.ListenAndServe(cfg.addr, logger(h)))
 }
 
