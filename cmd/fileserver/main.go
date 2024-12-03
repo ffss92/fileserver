@@ -5,34 +5,44 @@ import (
 	"io"
 	"log"
 	"net/http"
+	"os"
 	"time"
 
 	"github.com/ffss92/fileserver"
 )
 
 type config struct {
-	addr   string
-	dir    string
-	silent bool
+	addr     string
+	spa      bool
+	fallback string
+	silent   bool
 }
 
 func main() {
 	var cfg config
-	flag.StringVar(&cfg.dir, "dir", "", "sets the target directory")
-	flag.StringVar(&cfg.addr, "addr", ":8000", "sets the server addr")
-	flag.BoolVar(&cfg.silent, "silent", false, "disables request logging")
+	flag.StringVar(&cfg.addr, "addr", ":8000", "Sets the server listen address.")
+	flag.BoolVar(&cfg.spa, "spa", false, "Sets the server in SPA mode.")
+	flag.StringVar(&cfg.fallback, "fallback", "index.html", "Sets the SPA fallback file.")
+	flag.BoolVar(&cfg.silent, "silent", false, "Disables request logging.")
 	flag.Parse()
 
-	if cfg.dir == "" {
+	dir := os.Args[1]
+	if dir == "" {
 		log.Fatal("please provide a target")
 	}
+
 	if cfg.silent {
 		log.SetOutput(io.Discard)
 	}
 
-	h := http.StripPrefix("/", fileserver.Serve(cfg.dir))
+	var h http.Handler
+	if cfg.spa {
+		h = http.StripPrefix("/", fileserver.ServeSPA(os.DirFS(dir), cfg.fallback))
+	} else {
+		h = http.StripPrefix("/", fileserver.Serve(dir))
+	}
 
-	log.Printf("Serving %q on %q\n", cfg.dir, cfg.addr)
+	log.Printf("Serving %q on %q\n", dir, cfg.addr)
 	log.Fatal(http.ListenAndServe(cfg.addr, logger(h)))
 }
 
