@@ -37,7 +37,7 @@ func New(fs fs.FS, opts ...ServerOptFn) *Server {
 		fs:             fs,
 		etagFn:         calculateETag,
 		errHandler:     defaultErrorHandler,
-		cacheControlFn: noCacheAll,
+		cacheControlFn: NoCache,
 	}
 	for _, opt := range opts {
 		opt(server)

@@ -4,6 +4,8 @@ import (
 	"errors"
 	"io/fs"
 	"net/http"
+
+	"slices"
 )
 
 // Creates a new [http.Handler] suitable for serving Single-Page Applications.
@@ -11,6 +13,8 @@ import (
 // For the cases that a file is not found in [fs.FS], the path is invalid or the path is a dir, the server
 // will instead serve the fallback file, which in most cases should be 'index.html' or '200.html'.
 func ServeSPA(spa fs.FS, fallback string, opts ...ServerOptFn) http.Handler {
+	opts = slices.Insert(opts, 0, WithCacheControlFunc(Immutable(fallback)))
+
 	h := New(spa, opts...)
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		target := r.URL.Path
