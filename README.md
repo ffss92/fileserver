@@ -1,11 +1,11 @@
+[![Go Reference](https://pkg.go.dev/badge/github.com/ffss92/fileserver.svg)](https://pkg.go.dev/github.com/ffss92/fileserver)
+
 # fileserver
 
 Enhanced file server for Go.
 
 1. Provides ETag header generation (hex encoded md5 hash);
 1. Compression with `gzip`.
-
-For the full documentation, [click here](https://pkg.go.dev/github.com/ffss92/fileserver).
 
 ## Installation
 
