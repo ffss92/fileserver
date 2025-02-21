@@ -1,12 +1,20 @@
 package fileserver
 
 import (
+	"bytes"
+	"compress/gzip"
 	"errors"
 	"fmt"
 	"io"
 	"io/fs"
 	"net/http"
 	"os"
+	"strconv"
+)
+
+const (
+	// TODO: Make this a configuration, 15mb for now.
+	maxCompressSize = 15 << 20
 )
 
 var _ http.Handler = (*Server)(nil)
@@ -118,12 +126,36 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	w.Header().Add("Vary", "Accept-Encoding")
 
 	// Compressed (gzip)
-	if acceptsGzip(r) {
-		gzw := newGzipResponseWriter(w)
-		defer gzw.Close()
+	//
+	// In early versions compression was done 'on-the-fly' by a [http.ResponseWriter] wrapper.
+	// This was bad because it was not possible to for the [http.ServeContent] function to determine
+	// and set the Content-Length header to the response.
+	//
+	// Not setting the Content-Length header cause all sorts of problems, like being unable to serve
+	// Range requests, enabling connection reuses, etc.
+	//
+	// For now, the server only compresses files that are less than 15mbs in length, since it's done in memory,
+	// and should cover most assets normally served in a web application.
+	if acceptsGzip(r) && (stat.Size() > 1024 && stat.Size() < maxCompressSize) {
+		buf := new(bytes.Buffer)
+		gzw := gzip.NewWriter(buf)
 
+		_, err := io.Copy(gzw, content)
+		if err != nil {
+			s.errHandler(w, r, fmt.Errorf("fileserver: failed to compress content: %w", err))
+			return
+		}
+
+		// Closes the gzip.Writer and flushes the compressed data to buf.
+		if err := gzw.Close(); err != nil {
+			s.errHandler(w, r, fmt.Errorf("fileserver: failed to close gzip writer: %w", err))
+			return
+		}
+
+		// Set the Content-Length manually
+		w.Header().Set("Content-Length", strconv.Itoa(buf.Len()))
 		w.Header().Set("Content-Encoding", "gzip")
-		http.ServeContent(gzw, r, fileName, stat.ModTime(), content)
+		http.ServeContent(w, r, fileName, stat.ModTime(), bytes.NewReader(buf.Bytes()))
 		return
 	}
 
